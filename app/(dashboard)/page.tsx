@@ -69,7 +69,7 @@ export default function DashboardPage() {
         <p className="text-sm text-zinc-400 mt-0.5">欢迎回来</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <StatsCard title="待完成任务" value={loading ? "..." : summary ? String(summary.pendingTasks) : "—"} icon={CheckSquare} iconColor="text-blue-400" sub={summary?.pendingTasks === 0 ? "全部完成" : "项待处理"} href="/tasks" />
         <StatsCard title="当前体重" value={loading ? "..." : summary?.latestWeight ? `${summary.latestWeight} kg` : "未记录"} icon={Scale} iconColor="text-violet-400" href="/weight" />
         <StatsCard title="本周训练" value={loading ? "..." : fitnessLogs.length === 0 ? "—" : `${weekFitnessCount} 次`} icon={Dumbbell} iconColor="text-emerald-400" sub={fitnessLogs.length === 0 ? "未记录" : undefined} href="/fitness" />
