@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── 用户 ─────────────────────────────────────────────────────
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  tasks       Task[]
+  habits      Habit[]
+  habitLogs   HabitLog[]
+  weightLogs  WeightLog[]
+  fitnessLogs FitnessLog[]
+  funds       Fund[]
+  goals       Goal[]
+  courses     Course[]
+}
+
+// ─── NextAuth ─────────────────────────────────────────────────
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── 任务/待办 ────────────────────────────────────────────────
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  priority    Priority  @default(MEDIUM)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ─── 习惯打卡 ─────────────────────────────────────────────────
+model Habit {
+  id        String     @id @default(cuid())
+  name      String
+  icon      String?    @default("⭐")
+  color     String?    @default("#3B82F6")
+  active    Boolean    @default(true)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs      HabitLog[]
+  createdAt DateTime   @default(now())
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  completed Boolean  @default(true)
+
+  @@unique([habitId, date])
+}
+
+// ─── 体重记录 ─────────────────────────────────────────────────
+model WeightLog {
+  id        String   @id @default(cuid())
+  weight    Float
+  note      String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+// ─── 健身记录 ─────────────────────────────────────────────────
+model FitnessLog {
+  id        String   @id @default(cuid())
+  type      String   // running, gym, cycling, swimming, yoga, other
+  duration  Int      // 分钟
+  calories  Int?
+  distance  Float?   // km
+  note      String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+}
+
+// ─── 基金持仓 ─────────────────────────────────────────────────
+model Fund {
+  id        String   @id @default(cuid())
+  code      String   // 基金代码
+  name      String   // 基金名称
+  shares    Float    // 持有份额
+  costNav   Float    // 买入时净值
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, code])
+}
+
+// ─── 目标 ─────────────────────────────────────────────────────
+model Goal {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime?
+  progress    Int        @default(0)
+  status      GoalStatus @default(ACTIVE)
+  milestones  Json?      @default("[]")
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+// ─── 课程安排（预留） ─────────────────────────────────────────
+model Course {
+  id        String   @id @default(cuid())
+  name      String
+  teacher   String?
+  location  String?
+  color     String?  @default("#6366F1")
+  semester  String?
+  schedule  Json     // [{ day: 1, startPeriod: 1, endPeriod: 2 }]
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}

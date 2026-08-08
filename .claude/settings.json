@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"type e:\\\\MyProject\\\\personal-workbench\\\\app\\\\\\(dashboard\\)\\\\weight\\\\page.tsx\")",
+      "Bash(python -c \"print\\(open\\('e:/MyProject/personal-workbench/app/\\(dashboard\\)/weight/page.tsx'\\).read\\(\\)[:500]\\)\")",
+      "mcp__puppeteer__puppeteer_fill",
+      "mcp__puppeteer__puppeteer_click",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "mcp__puppeteer__puppeteer_evaluate",
+      "mcp__puppeteer__puppeteer_navigate"
+    ]
+  }
+}
