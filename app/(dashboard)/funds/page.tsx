@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { TrendingUp, Plus, RefreshCw, Trash2, X, Upload, Pencil } from "lucide-react"
+import { TrendingUp, Plus, RefreshCw, Trash2, X, Upload, Pencil, CalendarPlus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +27,12 @@ export default function FundsPage() {
   const [editShares, setEditShares] = useState("")
   const [editCostNav, setEditCostNav] = useState("")
   const [editFundSaving, setEditFundSaving] = useState(false)
+  const [dcaFundId, setDcaFundId] = useState<string | null>(null)
+  const [dcaShares, setDcaShares] = useState("")
+  const [dcaNav, setDcaNav] = useState("")
+  const [dcaDate, setDcaDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [dcaNote, setDcaNote] = useState("")
+  const [dcaSaving, setDcaSaving] = useState(false)
   const [lookingUp, setLookingUp] = useState(false)
   const [batchMode, setBatchMode] = useState(false)
   const [parsedFunds, setParsedFunds] = useState<ParsedFund[]>([])
@@ -102,6 +108,37 @@ export default function FundsPage() {
     setEditingFundId(fund.id)
     setEditShares(String(fund.shares))
     setEditCostNav(String(fund.costNav))
+  }
+
+  function startDca(fund: Fund) {
+    setDcaFundId(fund.id)
+    setDcaNav(navMap[fund.code]?.gsz || navMap[fund.code]?.dwjz || "")
+    setDcaShares("")
+    setDcaDate(new Date().toISOString().split("T")[0])
+    setDcaNote("")
+  }
+
+  async function saveDca() {
+    if (!dcaFundId || !dcaShares || !dcaNav) return
+    setDcaSaving(true)
+    try {
+      const res = await fetch(`/api/funds/${dcaFundId}/transactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shares: Number(dcaShares), nav: Number(dcaNav), date: dcaDate, note: dcaNote }),
+      })
+      if (res.ok) {
+        const updated: Fund = await res.json()
+        setFunds(prev => prev.map(f => f.id === dcaFundId ? updated : f))
+        setDcaFundId(null)
+        toast.success("定投记录已添加")
+      } else {
+        toast.error("添加失败，请重试")
+      }
+    } catch {
+      toast.error("网络错误，请检查连接")
+    }
+    setDcaSaving(false)
   }
 
   async function saveEditFund(id: string) {
@@ -422,6 +459,9 @@ export default function FundsPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                            <button onClick={() => startDca(fund)} className="text-zinc-200 hover:text-blue-500" title="添加定投">
+                              <CalendarPlus className="h-4 w-4" />
+                            </button>
                             <button onClick={() => startEditFund(fund)} className="text-zinc-200 hover:text-zinc-600">
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -462,6 +502,44 @@ export default function FundsPage() {
           )}
         </CardContent>
       </Card>
+
+      {dcaFundId && funds.find(f => f.id === dcaFundId) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setDcaFundId(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-zinc-900">添加定投 — {funds.find(f => f.id === dcaFundId)!.name}</h2>
+              <button onClick={() => setDcaFundId(null)} className="text-zinc-400 hover:text-zinc-600"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1 block">买入份额</label>
+                  <Input type="number" value={dcaShares} onChange={e => setDcaShares(e.target.value)} placeholder="100.00" step="0.01" min="0" className="text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1 block">买入净值</label>
+                  <Input type="number" value={dcaNav} onChange={e => setDcaNav(e.target.value)} placeholder="1.2345" step="0.0001" min="0" className="text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">买入日期</label>
+                <Input type="date" value={dcaDate} onChange={e => setDcaDate(e.target.value)} className="text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">备注（可选）</label>
+                <Input value={dcaNote} onChange={e => setDcaNote(e.target.value)} placeholder="第3次定投..." className="text-sm" />
+              </div>
+              <p className="text-[10px] text-zinc-400">添加后将自动更新持有份额和加权平均成本价</p>
+              <div className="flex gap-2 justify-end pt-1">
+                <button onClick={() => setDcaFundId(null)} className="text-sm text-zinc-400 hover:text-zinc-600 px-3 py-1.5 rounded">取消</button>
+                <Button size="sm" onClick={saveDca} disabled={dcaSaving || !dcaShares || !dcaNav}>
+                  {dcaSaving ? "添加中..." : "确认添加"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg bg-zinc-50 border border-zinc-100 p-4 text-xs text-zinc-400 space-y-1">
         <p>📌 数据来源：天天基金公开数据，每日收盘后更新</p>

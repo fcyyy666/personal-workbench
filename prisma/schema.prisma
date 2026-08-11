@@ -139,17 +139,29 @@ model FitnessLog {
 
 // ─── 基金持仓 ─────────────────────────────────────────────────
 model Fund {
-  id        String   @id @default(cuid())
-  code      String   // 基金代码
-  name      String   // 基金名称
-  shares    Float    // 持有份额
-  costNav   Float    // 买入时净值
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String            @id @default(cuid())
+  code         String            // 基金代码
+  name         String            // 基金名称
+  shares       Float             // 持有份额（自动汇总）
+  costNav      Float             // 加权平均成本净值（自动计算）
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions FundTransaction[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@unique([userId, code])
+}
+
+model FundTransaction {
+  id        String   @id @default(cuid())
+  fundId    String
+  fund      Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  shares    Float    // 本次买入份额
+  nav       Float    // 本次买入净值
+  date      DateTime @db.Date
+  note      String?
+  createdAt DateTime @default(now())
 }
 
 // ─── 目标 ─────────────────────────────────────────────────────
