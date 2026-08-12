@@ -368,25 +368,25 @@ export default function FitnessPage() {
           {/* 本周/本月统计 */}
           <div className="grid grid-cols-4 gap-3">
             <Card>
-              <CardContent className="pt-4 pb-4">
+              <CardContent className="pb-4">
                 <p className="text-xs text-zinc-400">本周训练</p>
                 <p className="text-2xl font-bold text-zinc-900 mt-1">{weekCount} <span className="text-sm font-normal text-zinc-400">次</span></p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-4 pb-4">
+              <CardContent className="pb-4">
                 <p className="text-xs text-zinc-400">本周时长</p>
                 <p className="text-2xl font-bold text-zinc-900 mt-1">{weekDuration} <span className="text-sm font-normal text-zinc-400">分钟</span></p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-4 pb-4">
+              <CardContent className="pb-4">
                 <p className="text-xs text-zinc-400">本月训练</p>
                 <p className="text-2xl font-bold text-zinc-900 mt-1">{monthCount} <span className="text-sm font-normal text-zinc-400">次</span></p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-4 pb-4">
+              <CardContent className="pb-4">
                 <p className="text-xs text-zinc-400">本月时长</p>
                 <p className="text-2xl font-bold text-zinc-900 mt-1">{monthDuration} <span className="text-sm font-normal text-zinc-400">分钟</span></p>
               </CardContent>
@@ -398,7 +398,7 @@ export default function FitnessPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">近8周训练频率</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <ResponsiveContainer width="100%" height={120}>
                   <BarChart data={weeklyData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <XAxis dataKey="week" tick={{ fontSize: 9, fill: '#a1a1aa' }} tickLine={false} axisLine={false} />
@@ -425,19 +425,19 @@ export default function FitnessPage() {
             <>
               <div className="grid grid-cols-3 gap-3">
                 <Card>
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pb-4">
                     <p className="text-xs text-zinc-400">全年训练</p>
                     <p className="text-2xl font-bold text-zinc-900 mt-1">{yearTotal} <span className="text-sm font-normal text-zinc-400">次</span></p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pb-4">
                     <p className="text-xs text-zinc-400">全年时长</p>
                     <p className="text-2xl font-bold text-zinc-900 mt-1">{yearDuration} <span className="text-sm font-normal text-zinc-400">分钟</span></p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pb-4">
                     <p className="text-xs text-zinc-400">月均训练</p>
                     <p className="text-2xl font-bold text-zinc-900 mt-1">{(yearTotal / 12).toFixed(1)} <span className="text-sm font-normal text-zinc-400">次</span></p>
                   </CardContent>
@@ -447,7 +447,7 @@ export default function FitnessPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">{selectedYear} 年各月训练频率</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <ResponsiveContainer width="100%" height={120}>
                     <BarChart data={monthlyData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                       <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#a1a1aa' }} tickLine={false} axisLine={false} />

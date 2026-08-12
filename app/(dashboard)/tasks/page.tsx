@@ -232,7 +232,7 @@ export default function TasksPage() {
 
         {showForm && (
           <Card className="mb-3">
-            <CardContent className="pt-4">
+            <CardContent>
               <form onSubmit={createTask} className="space-y-3">
                 <Input placeholder="任务标题..." value={title} onChange={e => setTitle(e.target.value)} autoFocus required />
                 <div className="flex gap-2">

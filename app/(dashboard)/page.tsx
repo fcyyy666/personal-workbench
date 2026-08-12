@@ -86,7 +86,7 @@ export default function DashboardPage() {
               <Link href="/tasks" className="text-xs text-zinc-400 hover:text-zinc-600">全部 →</Link>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {tasks.length === 0 ? (
               <div className="text-center py-6 text-zinc-400 text-sm">
                 <CheckSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
@@ -114,7 +114,7 @@ export default function DashboardPage() {
               <Link href="/goals" className="text-xs text-zinc-400 hover:text-zinc-600">全部 →</Link>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {goals.length === 0 ? (
               <div className="text-center py-6 text-zinc-400 text-sm">
                 <Flag className="h-8 w-8 mx-auto mb-2 opacity-30" />

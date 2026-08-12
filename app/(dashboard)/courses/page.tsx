@@ -173,7 +173,7 @@ export default function CoursesPage() {
 
       {showForm && (
         <Card>
-          <CardContent className="pt-4 pb-4">
+          <CardContent className="pb-4">
             <form onSubmit={handleAdd} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>

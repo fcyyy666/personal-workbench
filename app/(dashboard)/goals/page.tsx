@@ -177,7 +177,7 @@ export default function GoalsPage() {
 
       {showForm && (
         <Card>
-          <CardContent className="pt-4">
+          <CardContent>
             <form onSubmit={handleAdd} className="space-y-3">
               <Input placeholder="目标名称 *" value={form.title} onChange={e => setForm(v => ({ ...v, title: e.target.value }))} autoFocus />
               <Input placeholder="备注（可选）" value={form.description} onChange={e => setForm(v => ({ ...v, description: e.target.value }))} />
@@ -218,7 +218,7 @@ export default function GoalsPage() {
                     const isOverdue = goal.status === "ACTIVE" && goal.targetDate != null && new Date(goal.targetDate) < todayStart
                     return (
                     <Card key={goal.id} className={cn(`group transition-all`, goal.status === "COMPLETED" ? "opacity-60" : "", isOverdue ? "border-red-200" : "")}>
-                      <CardContent className="pt-4 pb-3">
+                      <CardContent className="pb-3">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-medium ${goal.status === "COMPLETED" ? "line-through text-zinc-400" : "text-zinc-900"}`}>{goal.title}</p>

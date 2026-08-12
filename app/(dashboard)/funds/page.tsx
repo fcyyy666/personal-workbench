@@ -30,6 +30,7 @@ export default function FundsPage() {
   const [dcaFundId, setDcaFundId] = useState<string | null>(null)
   const [dcaShares, setDcaShares] = useState("")
   const [dcaNav, setDcaNav] = useState("")
+  const [dcaAmount, setDcaAmount] = useState("")
   const [dcaDate, setDcaDate] = useState(() => new Date().toISOString().split("T")[0])
   const [dcaNote, setDcaNote] = useState("")
   const [dcaSaving, setDcaSaving] = useState(false)
@@ -114,8 +115,25 @@ export default function FundsPage() {
     setDcaFundId(fund.id)
     setDcaNav(navMap[fund.code]?.gsz || navMap[fund.code]?.dwjz || "")
     setDcaShares("")
+    setDcaAmount("")
     setDcaDate(new Date().toISOString().split("T")[0])
     setDcaNote("")
+  }
+
+  function handleDcaAmountChange(val: string) {
+    setDcaAmount(val)
+    if (val && dcaNav) {
+      const s = parseFloat(val) / parseFloat(dcaNav)
+      if (!isNaN(s)) setDcaShares(s.toFixed(2))
+    }
+  }
+
+  function handleDcaNavChange(val: string) {
+    setDcaNav(val)
+    if (dcaAmount && val) {
+      const s = parseFloat(dcaAmount) / parseFloat(val)
+      if (!isNaN(s)) setDcaShares(s.toFixed(2))
+    }
   }
 
   async function saveDca() {
@@ -251,7 +269,7 @@ export default function FundsPage() {
 
   const totals = funds.reduce((acc, fund) => {
     const nav = navMap[fund.code]
-    const currentNav = nav ? parseFloat(nav.gsz || nav.dwjz) : fund.costNav
+    const currentNav = nav ? parseFloat(nav.dwjz || nav.gsz) : fund.costNav
     return {
       cost: acc.cost + fund.shares * fund.costNav,
       current: acc.current + fund.shares * currentNav,
@@ -294,7 +312,7 @@ export default function FundsPage() {
               <button onClick={() => { setBatchMode(false); setParsedFunds([]) }} className="text-zinc-400 hover:text-zinc-600"><X className="h-4 w-4" /></button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-0 space-y-3">
             {parsedFunds.map((f, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 p-3 rounded-lg bg-zinc-50 border border-zinc-100 relative">
                 {f.rawText && (
@@ -333,7 +351,7 @@ export default function FundsPage() {
 
       {showForm && (
         <Card>
-          <CardContent className="pt-4">
+          <CardContent>
             <form onSubmit={addFund} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -365,19 +383,19 @@ export default function FundsPage() {
       {funds.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           <Card>
-            <CardContent className="pt-4 pb-4">
+            <CardContent className="pb-4">
               <p className="text-xs text-zinc-400">持仓成本</p>
               <p className="text-xl font-bold text-zinc-900 mt-1">¥{totals.cost.toFixed(2)}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-4 pb-4">
+            <CardContent className="pb-4">
               <p className="text-xs text-zinc-400">持有金额</p>
               <p className="text-xl font-bold text-zinc-900 mt-1">¥{totals.current.toFixed(2)}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-4 pb-4">
+            <CardContent className="pb-4">
               <p className="text-xs text-zinc-400">持有收益</p>
               <p className={cn("text-xl font-bold mt-1", totalProfit >= 0 ? "text-red-500" : "text-green-600")}>
                 {totalProfit >= 0 ? "+" : ""}{totalProfit.toFixed(2)}
@@ -396,7 +414,7 @@ export default function FundsPage() {
             <TrendingUp className="h-4 w-4" /> 持仓列表
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {loading ? <p className="text-sm text-zinc-400">加载中...</p> : funds.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-zinc-300">
               <TrendingUp className="h-10 w-10 mb-3" />
@@ -407,8 +425,8 @@ export default function FundsPage() {
             <div className="space-y-3">
               {funds.map(fund => {
                 const nav = navMap[fund.code]
-                const currentNav = nav ? parseFloat(nav.gsz || nav.dwjz) : null
-                const navLabel = nav?.gsz ? "估算净值" : "实际净值"
+                const currentNav = nav ? parseFloat(nav.dwjz || nav.gsz) : null
+                const navLabel = nav?.dwjz ? `实际净值(${nav.jzrq})` : "估算净值"
                 const cost = fund.shares * fund.costNav
                 const current = currentNav ? fund.shares * currentNav : null
                 const profit = current ? current - cost : null
@@ -513,13 +531,17 @@ export default function FundsPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-400 mb-1 block">买入份额</label>
-                  <Input type="number" value={dcaShares} onChange={e => setDcaShares(e.target.value)} placeholder="100.00" step="0.01" min="0" className="text-sm" />
+                  <label className="text-xs text-zinc-400 mb-1 block">买入金额（元）</label>
+                  <Input type="number" value={dcaAmount} onChange={e => handleDcaAmountChange(e.target.value)} placeholder="10.00" step="0.01" min="0" className="text-sm" />
                 </div>
                 <div>
                   <label className="text-xs text-zinc-400 mb-1 block">买入净值</label>
-                  <Input type="number" value={dcaNav} onChange={e => setDcaNav(e.target.value)} placeholder="1.2345" step="0.0001" min="0" className="text-sm" />
+                  <Input type="number" value={dcaNav} onChange={e => handleDcaNavChange(e.target.value)} placeholder="1.2345" step="0.0001" min="0" className="text-sm" />
                 </div>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">买入份额</label>
+                <Input type="number" value={dcaShares} onChange={e => setDcaShares(e.target.value)} placeholder="自动计算，或手动填写" step="0.01" min="0" className="text-sm" />
               </div>
               <div>
                 <label className="text-xs text-zinc-400 mb-1 block">买入日期</label>
@@ -529,7 +551,7 @@ export default function FundsPage() {
                 <label className="text-xs text-zinc-400 mb-1 block">备注（可选）</label>
                 <Input value={dcaNote} onChange={e => setDcaNote(e.target.value)} placeholder="第3次定投..." className="text-sm" />
               </div>
-              <p className="text-[10px] text-zinc-400">添加后将自动更新持有份额和加权平均成本价</p>
+              <p className="text-[10px] text-zinc-400">填写金额+净值可自动算出份额；添加后自动更新持仓</p>
               <div className="flex gap-2 justify-end pt-1">
                 <button onClick={() => setDcaFundId(null)} className="text-sm text-zinc-400 hover:text-zinc-600 px-3 py-1.5 rounded">取消</button>
                 <Button size="sm" onClick={saveDca} disabled={dcaSaving || !dcaShares || !dcaNav}>

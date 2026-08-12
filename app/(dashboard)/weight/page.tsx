@@ -226,7 +226,7 @@ export default function WeightPage() {
 
       {showForm && (
         <Card>
-          <CardContent className="pt-4">
+          <CardContent>
             <form onSubmit={createLog} className="space-y-3">
               <div className="flex gap-2">
                 <Input
@@ -307,7 +307,7 @@ export default function WeightPage() {
 
           <Card>
             <CardHeader><CardTitle>近14天趋势</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {loading
                 ? <div className="h-28 flex items-center justify-center text-zinc-400 text-sm">加载中...</div>
                 : <WeightChart logs={logs} />
@@ -325,7 +325,7 @@ export default function WeightPage() {
             <>
               <div className="grid grid-cols-3 gap-3">
                 <Card>
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pb-4">
                     <p className="text-xs text-zinc-400">年度最低</p>
                     <div className="flex items-baseline gap-1 mt-1">
                       <span className="text-2xl font-bold text-zinc-900">{yearMin}</span>
@@ -334,7 +334,7 @@ export default function WeightPage() {
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pb-4">
                     <p className="text-xs text-zinc-400">年度最高</p>
                     <div className="flex items-baseline gap-1 mt-1">
                       <span className="text-2xl font-bold text-zinc-900">{yearMax}</span>
@@ -343,7 +343,7 @@ export default function WeightPage() {
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pb-4">
                     <p className="text-xs text-zinc-400">年度平均</p>
                     <div className="flex items-baseline gap-1 mt-1">
                       <span className="text-2xl font-bold text-zinc-900">{yearAvg}</span>
@@ -357,7 +357,7 @@ export default function WeightPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">{selectedYear} 年月均体重趋势</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <ResponsiveContainer width="100%" height={120}>
                     <LineChart data={monthlyAvg} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                       <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#a1a1aa' }} tickLine={false} axisLine={false} />
