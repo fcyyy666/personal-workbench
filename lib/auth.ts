@@ -6,6 +6,33 @@ import { db } from "@/lib/db"
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30天
+  // 生产环境通过 HTTP（IP 直连，无 HTTPS）访问，必须关闭 secure 标记
+  // 否则浏览器在 HTTP 下会静默丢弃 session cookie，导致移动端每次都需重新登录
+  cookies: {
+    sessionToken: {
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    callbackUrl: {
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    csrfToken: {
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+  },
   pages: { signIn: "/login" },
   providers: [
     Credentials({

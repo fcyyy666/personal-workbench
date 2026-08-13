@@ -6,7 +6,6 @@ import { CheckSquare, Scale, TrendingUp, Flag, BookOpen, Circle, Dumbbell } from
 import { StatsCard } from "@/components/dashboard/StatsCard"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { getGreeting } from "@/lib/utils"
 
 interface TodayCourse { id: string; name: string; location: string | null; color: string | null; startPeriod: number; endPeriod: number }
 interface DashboardData {
@@ -15,6 +14,7 @@ interface DashboardData {
 }
 interface Task { id: string; title: string; completed: boolean; priority: string; dueDate: string | null }
 interface Fund { id: string; code: string; name: string; shares: number; costNav: number; currentNav: number | null }
+interface FundNavData { name: string; jzrq: string; dwjz: string; gsz: string; gszzl: string; gztime: string }
 interface Goal { id: string; title: string; progress: number; status: string; targetDate: string | null }
 interface FitnessLog { id: string; date: string }
 
@@ -24,10 +24,10 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardData | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [funds, setFunds] = useState<Fund[]>([])
+  const [fundNavs, setFundNavs] = useState<Record<string, FundNavData>>({})
   const [goals, setGoals] = useState<Goal[]>([])
   const [fitnessLogs, setFitnessLogs] = useState<FitnessLog[]>([])
   const [loading, setLoading] = useState(true)
-  const greeting = getGreeting()
 
   useEffect(() => {
     Promise.allSettled([
@@ -36,10 +36,19 @@ export default function DashboardPage() {
       fetch("/api/funds").then(r => r.json()),
       fetch("/api/goals").then(r => r.json()),
       fetch("/api/fitness").then(r => r.json()),
-    ]).then(([s, t, f, g, fit]) => {
+    ]).then(async ([s, t, f, g, fit]) => {
       if (s.status === "fulfilled") setSummary(s.value)
       if (t.status === "fulfilled") setTasks((t.value as Task[]).filter(task => !task.completed).slice(0, 5))
-      if (f.status === "fulfilled") setFunds(f.value)
+      if (f.status === "fulfilled") {
+        const fundList = f.value as Fund[]
+        setFunds(fundList)
+        if (fundList.length > 0) {
+          try {
+            const navRes = await fetch(`/api/funds/nav?codes=${fundList.map(f => f.code).join(",")}`)
+            if (navRes.ok) setFundNavs(await navRes.json())
+          } catch { /* silent */ }
+        }
+      }
       if (g.status === "fulfilled") setGoals((g.value as Goal[]).filter(goal => goal.status === "ACTIVE").slice(0, 4))
       if (fit.status === "fulfilled") setFitnessLogs(fit.value)
       setLoading(false)
@@ -52,7 +61,15 @@ export default function DashboardPage() {
     if (summary) setSummary({ ...summary, pendingTasks: summary.pendingTasks - 1 })
   }
 
-  const fundTotal = funds.reduce((sum, f) => sum + (f.currentNav || f.costNav) * f.shares, 0)
+  const fundStats = funds.reduce((acc, fund) => {
+    const nav = fundNavs[fund.code]
+    const change = nav?.gszzl ? parseFloat(nav.gszzl) : null
+    if (change === null) acc.flat++
+    else if (change > 0) acc.up++
+    else if (change < 0) acc.down++
+    else acc.flat++
+    return acc
+  }, { up: 0, down: 0, flat: 0 })
 
   const now = new Date()
   const dayOfWeek = now.getDay()
@@ -64,17 +81,20 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-900">{greeting} 👋</h1>
-        <p className="text-sm text-zinc-400 mt-0.5">欢迎回来</p>
-      </div>
-
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <StatsCard title="待完成任务" value={loading ? "..." : summary ? String(summary.pendingTasks) : "—"} icon={CheckSquare} iconColor="text-blue-400" sub={summary?.pendingTasks === 0 ? "全部完成" : "项待处理"} href="/tasks" />
         <StatsCard title="当前体重" value={loading ? "..." : summary?.latestWeight ? `${summary.latestWeight} kg` : "未记录"} icon={Scale} iconColor="text-violet-400" href="/weight" />
         <StatsCard title="本周训练" value={loading ? "..." : fitnessLogs.length === 0 ? "—" : `${weekFitnessCount} 次`} icon={Dumbbell} iconColor="text-emerald-400" sub={fitnessLogs.length === 0 ? "未记录" : undefined} href="/fitness" />
         <StatsCard title="进行中目标" value={loading ? "..." : summary ? String(summary.activeGoals) : "—"} icon={Flag} iconColor="text-orange-400" sub={summary && summary.activeGoals > 0 ? `平均 ${summary.avgGoalProgress}%` : undefined} href="/goals" />
-        <StatsCard title="基金持仓" value={loading ? "..." : funds.length === 0 ? "—" : `¥${fundTotal.toFixed(2)}`} icon={TrendingUp} iconColor="text-rose-400" sub={funds.length === 0 ? "未添加" : `${funds.length} 支基金`} href="/funds" />
+        <StatsCard
+          title="基金行情"
+          value={loading ? "..." : funds.length === 0 ? "—" : `${fundStats.up} 涨 · ${fundStats.down} 跌`}
+          icon={TrendingUp}
+          iconColor="text-rose-400"
+          sub={funds.length === 0 ? "未添加" : `${funds.length} 支基金 · ${fundStats.flat} 平`}
+          trend={funds.length === 0 ? "neutral" : fundStats.up >= fundStats.down ? "up" : "down"}
+          href="/funds"
+        />
         <StatsCard title="今日课程" value={loading ? "..." : summary ? String(summary.todayCourses.length) : "—"} icon={BookOpen} iconColor="text-indigo-400" sub={!summary ? undefined : summary.todayCourses.length === 0 ? "今日无课" : "节课"} href="/courses" />
       </div>
 
