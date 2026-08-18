@@ -12,7 +12,7 @@ import { toast } from "sonner"
 
 interface WeightLog { id: string; weight: number; note: string | null; date: string }
 
-function WeightChart({ logs }: { logs: WeightLog[] }) {
+function WeightChart({ logs, targetWeight }: { logs: WeightLog[]; targetWeight: number | null }) {
   const today = new Date()
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today)
@@ -25,42 +25,98 @@ function WeightChart({ logs }: { logs: WeightLog[] }) {
   const withData = days.filter(d => d.weight !== null) as { ds: string; weight: number }[]
   if (withData.length < 2) {
     return (
-      <div className="flex items-center justify-center h-28 text-zinc-300 text-sm">
+      <div className="flex items-center justify-center h-32 text-zinc-300 text-sm">
         记录 2 条以上数据后显示趋势图
       </div>
     )
   }
 
-  const weights = withData.map(d => d.weight)
-  const minW = Math.min(...weights) - 1
-  const maxW = Math.max(...weights) + 1
-  const range = maxW - minW
+  // Y 轴范围：基于数据 + 目标线
+  const allValues = [...withData.map(d => d.weight), ...(targetWeight != null ? [targetWeight] : [])]
+  const minVal = Math.min(...allValues)
+  const maxVal = Math.max(...allValues)
+  const padding = Math.max(0.5, (maxVal - minVal) * 0.15)
+  const minW = Math.floor((minVal - padding) * 2) / 2
+  const maxW = Math.ceil((maxVal + padding) * 2) / 2
+  const range = maxW - minW || 1
 
-  const W = 500; const H = 100; const PX = 10; const PY = 8
+  // SVG 画布（更大、更清晰）
+  const W = 500; const H = 140; const PL = 28; const PR = 12; const PT = 12; const PB = 22
 
+  // 坐标计算
+  const xFor = (i: number) => PL + (i / 13) * (W - PL - PR)
+  const yFor = (v: number) => PT + (1 - (v - minW) / range) * (H - PT - PB)
+
+  // 数据点（用 null 表示缺失，便于连接）
   const pts = days.map((d, i) => ({
-    x: PX + (i / 13) * (W - PX * 2),
-    y: d.weight !== null ? PY + (1 - (d.weight - minW) / range) * (H - PY * 2) : null,
+    x: xFor(i),
+    y: d.weight !== null ? yFor(d.weight) : null,
+    weight: d.weight,
+    ds: d.ds,
   }))
 
-  const pathSegments: string[] = []
-  let cur = ""
-  for (const p of pts) {
-    if (p.y !== null) {
-      cur = cur ? `${cur} L${p.x.toFixed(1)},${p.y.toFixed(1)}` : `M${p.x.toFixed(1)},${p.y.toFixed(1)}`
-    } else if (cur) { pathSegments.push(cur); cur = "" }
-  }
-  if (cur) pathSegments.push(cur)
+  // 路径：连接所有非空点（穿越空缺日用细虚线）
+  const linePts = pts.filter(p => p.y !== null) as Array<{ x: number; y: number; weight: number; ds: string }>
+  const mainPath = linePts.length >= 2
+    ? "M" + linePts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" L")
+    : ""
+
+  // Y 轴刻度（4 条）
+  const yTicks = 4
+  const tickValues = Array.from({ length: yTicks + 1 }, (_, i) => +(minW + (i / yTicks) * range).toFixed(1))
+
+  // 起始/结束日期标签
+  const fmt = (ds: string) => `${parseInt(ds.slice(5, 7), 10)}/${parseInt(ds.slice(8, 10), 10)}`
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 100 }}>
-      {pathSegments.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="#18181b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      ))}
-      {pts.filter(p => p.y !== null).map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y!} r="3.5" fill="#18181b" />
-      ))}
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 140 }}>
+        {/* Y 轴刻度线 + 标签 */}
+        {tickValues.map((v, i) => {
+          const y = yFor(v)
+          return (
+            <g key={i}>
+              <line x1={PL} y1={y.toFixed(1)} x2={W - PR} y2={y.toFixed(1)} stroke="#f4f4f5" strokeWidth="1" />
+              <text x={PL - 4} y={(y + 3).toFixed(1)} fontSize="9" fill="#a1a1aa" textAnchor="end">{v}</text>
+            </g>
+          )
+        })}
+
+        {/* 目标线 */}
+        {targetWeight != null && targetWeight >= minW && targetWeight <= maxW && (
+          <g>
+            <line
+              x1={PL} y1={yFor(targetWeight).toFixed(1)}
+              x2={W - PR} y2={yFor(targetWeight).toFixed(1)}
+              stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" opacity="0.7"
+            />
+            <text x={W - PR - 2} y={(yFor(targetWeight) - 3).toFixed(1)} fontSize="8" fill="#f59e0b" textAnchor="end">目标 {targetWeight}</text>
+          </g>
+        )}
+
+        {/* 主连线（即使中间有空缺也连接） */}
+        {mainPath && <path d={mainPath} fill="none" stroke="#18181b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
+
+        {/* 数据点 + 数值标签（最新 3 个点显示标签） */}
+        {linePts.map((p, i) => {
+          const isLast = i >= linePts.length - 3
+          return (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="2.5" fill="#18181b" />
+              {isLast && (
+                <text x={p.x} y={(p.y - 6).toFixed(1)} fontSize="9" fill="#18181b" textAnchor="middle" fontWeight="600">
+                  {p.weight}
+                </text>
+              )}
+            </g>
+          )
+        })}
+
+        {/* X 轴起止日期 */}
+        <text x={PL} y={H - 4} fontSize="9" fill="#a1a1aa" textAnchor="start">{fmt(days[0].ds)}</text>
+        <text x={W - PR} y={H - 4} fontSize="9" fill="#a1a1aa" textAnchor="end">{fmt(days[13].ds)}</text>
+      </svg>
+    </div>
   )
 }
 
@@ -309,8 +365,8 @@ export default function WeightPage() {
             <CardHeader><CardTitle>近14天趋势</CardTitle></CardHeader>
             <CardContent className="pt-0">
               {loading
-                ? <div className="h-28 flex items-center justify-center text-zinc-400 text-sm">加载中...</div>
-                : <WeightChart logs={logs} />
+                ? <div className="h-32 flex items-center justify-center text-zinc-400 text-sm">加载中...</div>
+                : <WeightChart logs={logs} targetWeight={targetWeight} />
               }
             </CardContent>
           </Card>
